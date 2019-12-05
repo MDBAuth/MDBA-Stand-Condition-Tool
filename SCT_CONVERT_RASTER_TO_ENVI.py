@@ -208,7 +208,7 @@ def create_envi_header_template(input_bil_raster):
 ###################################################################################################################
 # function to convert from input raster to ESRI bil format
 # inputs are a file name to a valid raster file
-# (6 band floating point tif, spatial reference EPSG: 4326
+# (6 band floating point tif, with spatial reference EPSG: 4326
 # output is a 16 bit signed integer bil file
 
 
