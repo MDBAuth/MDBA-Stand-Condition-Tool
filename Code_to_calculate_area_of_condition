@@ -1,0 +1,145 @@
+// Import data
+var spp = ee.Image('users/Projects/SCT_supplementary_files/MDBVTmap1');
+var condcol = ee.ImageCollection('users/Projects/Condition_8bit');
+var bws = ee.FeatureCollection('users/Projects/BWSRegions');
+var mfpcol = ee.ImageCollection('users/Projects/mfp');
+var anae = ee.Image('users/Projects/Hunt/MFP/Wetlands_desc2');
+var nsw = ee.Image('users/Projects/Hunt/MFP/Interim_NSW1');
+
+// Make ANAE forest mask
+var forests = anae.eq(22).add(anae.eq(30)).add(anae.eq(31)).add(anae.eq(35)).add(anae.eq(66))
+                  .gt(0)
+                  .selfMask();
+
+// Make floodplain mask
+var mfp = mfpcol.mosaic().gt(0);
+
+// Make interim NSW forest mask
+var nsw_forests = nsw.eq(1).add(nsw.eq(2)).add(nsw.eq(4)).add(nsw.eq(7)).add(nsw.eq(10)).add(nsw.eq(11))
+                     .add(nsw.eq(13)).add(nsw.eq(15)).add(nsw.eq(16))
+                     .gt(0)
+                     .unmask();
+
+// Add all masks together
+var mfp_forest_add = forests.unmask()
+                            .add(mfp.add(1).unmask())
+                            .add(nsw_forests.unmask())
+                            .selfMask()
+                            .multiply(ee.Image(0));
+
+// Make binary area image
+var sppmfp = spp;
+var rc = sppmfp.mask(spp.eq(3)).divide(ee.Image(3));
+var rr = sppmfp.mask(spp.eq(1));
+var bb = sppmfp.mask(spp.eq(2)).divide(ee.Image(2));
+
+// Add to map
+Map.addLayer(rr,{palette:['red']},'River Red Gum');
+Map.addLayer(bb,{palette:['black']},'Black Box');
+Map.addLayer(rc,{palette:['green']},'Coolabah');
+Map.centerObject(bws.geometry(),9);
+
+// Make group image
+var binCondition = function(cond){
+  var bin1 = cond.mask(cond.mask(cond.lte(20)).gt(0)).multiply(ee.Image(0)).add(ee.Image(102)).unmask(); //was gte
+  var bin2 = cond.mask(cond.mask(cond.gt(20)).mask(cond.lte(40)).gt(0)).multiply(ee.Image(0)).add(ee.Image(24)).unmask();
+  var bin3 = cond.mask(cond.mask(cond.gt(40)).mask(cond.lte(60)).gt(0)).multiply(ee.Image(0)).add(ee.Image(46)).unmask();
+  var bin4 = cond.mask(cond.mask(cond.gt(60)).mask(cond.lte(80)).gt(0)).multiply(ee.Image(0)).add(ee.Image(68)).unmask();
+  var bin5 = cond.mask(cond.mask(cond.gt(80)).mask(cond.lte(100)).gt(0)).multiply(ee.Image(0)).add(ee.Image(810)).unmask();
+  var groupImage = bin1.add(bin2).add(bin3).add(bin4).add(bin5);//should then keep in zeros .mask(cond);
+  return groupImage;
+};
+
+var groupImages = condcol.map(binCondition);
+print('groupImages',groupImages);
+
+Map.addLayer(groupImages.first().randomVisualizer(),{},'First binned image');
+
+// Functions to add species as a property
+var addRRG = function(element){
+  var dict = {species: 'River Red Gum'};
+  var nowhereFeature = ee.Feature(null, dict);
+  return element.copyProperties(nowhereFeature,['species']);
+};
+
+var addRC = function(element){
+  var dict = {species: 'Coolabah'};
+  var nowhereFeature = ee.Feature(null, dict);
+  return element.copyProperties(nowhereFeature,['species']);
+};
+
+var addBB = function(element){
+  var dict = {species: 'Black Box'};
+  var nowhereFeature = ee.Feature(null, dict);
+  return element.copyProperties(nowhereFeature,['species']);
+};
+
+// Calculate area by group
+// River red gum
+var calcAreaRR = function(groupImage){
+  return rr.multiply(ee.Image.pixelArea()).addBands(groupImage).reduceRegions({
+    reducer:ee.Reducer.sum().group({groupField:1}),
+    collection: bws,scale:rr.projection().nominalScale()})
+                                    .map(addRRG)
+                                    .map(function(element){
+                                        var dict = {si: ee.String(groupImage.get('system:index'))};
+                                        var nowhereFeature = ee.Feature(null, dict);
+                                        return element.copyProperties(nowhereFeature,['si']);
+});
+};
+var rr_area = groupImages.map(calcAreaRR).flatten();
+print('rr_area first 5',rr_area.limit(5));
+
+// River coolabah
+var calcAreaRC = function(groupImage){
+  return rc.multiply(ee.Image.pixelArea()).addBands(groupImage).reduceRegions({
+    reducer:ee.Reducer.sum().group({groupField:1}),
+    collection: bws,scale:rc.projection().nominalScale()})
+                                    .map(addRC)
+                                    .map(function(element){
+                                        var dict = {si: ee.String(groupImage.get('system:index'))};
+                                        var nowhereFeature = ee.Feature(null, dict);
+                                        return element.copyProperties(nowhereFeature,['si']);
+});
+};
+var rc_area = groupImages.map(calcAreaRC).flatten();
+print('rc_area first 5',rc_area.limit(5));
+
+// Black box
+var calcAreaBB = function(groupImage){
+  return bb.multiply(ee.Image.pixelArea()).addBands(groupImage).reduceRegions({
+    reducer:ee.Reducer.sum().group({groupField:1}),
+    collection: bws,scale:bb.projection().nominalScale()})
+                                    .map(addBB)
+                                    .map(function(element){
+                                      var dict = {si: ee.String(groupImage.get('system:index'))};
+                                      var nowhereFeature = ee.Feature(null, dict);
+                                      return element.copyProperties(nowhereFeature,['si']);
+});
+};
+var bb_area = groupImages.map(calcAreaBB).flatten();
+print('bb_area first 5',bb_area.limit(5));
+
+// Combine all 3 species
+var bin_area = ee.FeatureCollection(rr_area.toList(rr_area.size())
+                                    .cat(rc_area.toList(rc_area.size()))
+                                    .cat(bb_area.toList(bb_area.size())));
+print('bin_area first 5',bin_area.limit(5));
+
+// Convert output column list to columns
+var area_wide = bin_area.map(function(feature){
+  var list = ee.List(ee.Feature(feature).get('groups'));
+  var keys = list.map(function(o) { return ee.Number(ee.Dictionary(o).get('group')).format('%d') });
+  var values = list.map(function(o) { return ee.Dictionary(o).get('sum') });
+  
+  return ee.Feature(feature.geometry(), ee.Dictionary.fromLists(keys, values))
+           .copyProperties(feature,['BWS_Region','species','si']);
+}).select([".*"], null, false);
+print('grouped area formatted', area_wide.filter(ee.Filter.eq('BWS_Region','Barwon-Darling')));  
+
+// Export
+Export.table.toCloudStorage({collection:area_wide, 
+                            description:'Condition_all_species', 
+                            bucket:'mdba_gee_bucket', 
+                            fileFormat:'CSV'
+                            });
