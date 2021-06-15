@@ -39,5 +39,5 @@ To operate this code you will need a Google Earth Engine login subject to their 
 This code takes in the output condition raster from the Stand Condition Tool and calculates the area of the binned condition. The SCT tool outputs condition between 0 and 10, however the pre-calculated condition rasters (https://code.earthengine.google.com/?asset=users/Projects/Condition_8bit) are scaled between 0 and 100. 
 
 ### Questions
-Codes authored and maintained by Stephen Sunderland, Murray-Darling Basin Authority 23/05/19
+Codes authored and maintained by Stephen Sunderland, Murray-Darling Basin Authority 23/05/19.
 Questions to gis@mdba.gov.au
