@@ -1,4 +1,9 @@
-# Murray-Darling Basin Authority Stand Condition Tool input file converter
+# Murray-Darling Basin Authority Stand Condition Tool
+
+## Murray-Darling Basin Authority Stand Condition Tool condition area calcuator
+
+
+## Murray-Darling Basin Authority Stand Condition Tool input file converter
 
 This Python Script is used to convert input raster files to the format required for the MDBA Stand Condition Tool 
 The script automates the process set out in "Manually creating new input files for the MDBA Stand Condition Tool.docx"
