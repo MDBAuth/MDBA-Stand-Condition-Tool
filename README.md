@@ -3,13 +3,13 @@
 The 2017 Stand Condition Tool (SCT), originally called the Murray-Darling Vegetation Monitor (MDVM) and later the Stand Condition Assessment Tool (SCA Tool/SCaT), is a piece of software which maps conditions of native tree stands across the MDB. The SCT requires Landsat summary images as input, and it outputs predictions of field variables, these are stand condition, plant area index (PAI), live basal area (LBA) and crown extent (CE). These predictions can be compared with relevant field data to determine the model fit using the in-built validation option. Additionally, field data can be used to post-process the model to better to fit the observed conditions and thus produce more representative maps (Murray-Darling Vegetation Monitor User’s Guide 2017).
 
 Some datasets will be needed for running these codes:
-*Boundary of the Murray-Darling Basin        - https://code.earthengine.google.com/?asset=users/Projects/MDB_single
-*Collection of floodplain shapefiles         - https://code.earthengine.google.com/?asset=users/Projects/mfp
-*BWS Regions                                 - https://code.earthengine.google.com/?asset=users/Projects/BWSRegions
-*ANAE Wetlands (converted to raster)         - https://code.earthengine.google.com/?asset=users/Projects/Hunt/MFP/Wetlands_desc2
-*Interim NSW Wetlands (from ANAE as raster)  - https://code.earthengine.google.com/?asset=users/Projects/Hunt/MFP/Interim_NSW1
-*Species mask                                - https://code.earthengine.google.com/?asset=users/Projects/SCT_supplementary_files/MDBVTmap1
-*Collection of output condition rasters      - https://code.earthengine.google.com/?asset=users/Projects/Condition_8bit
+* Boundary of the Murray-Darling Basin        - https://code.earthengine.google.com/?asset=users/Projects/MDB_single
+* Collection of floodplain shapefiles         - https://code.earthengine.google.com/?asset=users/Projects/mfp
+* BWS Regions                                 - https://code.earthengine.google.com/?asset=users/Projects/BWSRegions
+* ANAE Wetlands (converted to raster)         - https://code.earthengine.google.com/?asset=users/Projects/Hunt/MFP/Wetlands_desc2
+* Interim NSW Wetlands (from ANAE as raster)  - https://code.earthengine.google.com/?asset=users/Projects/Hunt/MFP/Interim_NSW1
+* Species mask                                - https://code.earthengine.google.com/?asset=users/Projects/SCT_supplementary_files/MDBVTmap1
+* Collection of output condition rasters      - https://code.earthengine.google.com/?asset=users/Projects/Condition_8bit
 
 For more information on the datasets see https://www.mdba.gov.au/sites/default/files/pubs/bp-eval-2020-tree-stand-condition-assessment-tool.pdf
 
