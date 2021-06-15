@@ -1,0 +1,113 @@
+// Define user input
+var percentile = 75; // which percentile do you want to export?
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// Import collections
+var L8sr = ee.ImageCollection('LANDSAT/LC08/C01/T1_SR');
+var L7sr = ee.ImageCollection("LANDSAT/LT05/C01/T1_SR");
+var L5sr = ee.ImageCollection("LANDSAT/LT05/C01/T1_SR");
+
+var bounds = ee.FeatureCollection('users/Projects/MDB_single'); // Basin shapefile
+
+Map.addLayer(bounds);
+Map.centerObject(bounds);
+
+//Mask cloud
+var cloudMaskL457 = function(image) {
+  var qa = image.select('pixel_qa');
+  // If the cloud bit (5) is set and the cloud confidence (7) is high
+  // or the cloud shadow bit is set (3), then it's a bad pixel.
+  var cloud = qa.bitwiseAnd(1 << 5)
+          .and(qa.bitwiseAnd(1 << 7))
+          .or(qa.bitwiseAnd(1 << 3))
+  // Remove edge pixels that don't occur in all bands
+  var mask2 = image.mask().reduce(ee.Reducer.min());
+  return image.updateMask(cloud.not()).updateMask(mask2);
+};
+
+// Function to cloud mask from the pixel_qa band of Landsat 8 SR data.
+function maskL8sr(image) {
+  // Bits 3 and 5 are cloud shadow and cloud, respectively.
+  var cloudShadowBitMask = 1 << 3;
+  var cloudsBitMask = 1 << 5;
+
+  // Get the pixel QA band.
+  var qa = image.select('pixel_qa');
+
+  // Both flags should be set to zero, indicating clear conditions.
+  var mask = qa.bitwiseAnd(cloudShadowBitMask).eq(0)
+      .and(qa.bitwiseAnd(cloudsBitMask).eq(0));
+
+  // Return the masked image, scaled to TOA reflectance, without the QA bands.
+  return image.updateMask(mask)//.divide(10000) // Why is this here? 
+      .select("B[0-9]*")
+      .copyProperties(image, ["system:time_start"]);
+}
+
+// Rename bands
+var renameBands8 =  function(img){
+  return img.select(['B2','B3','B4','B5','B6','B7']).rename(['blue','green','red','nir','swir1','swir2'])
+};
+var renameBands57 =  function(img){
+  return img.select(['B1','B2','B3','B4','B5','B7']).rename(['blue','green','red','nir','swir1','swir2'])
+};
+
+// Filter Collections
+var L8col = L8sr
+              .filterBounds(bounds)
+              .map(maskL8sr)
+              .map(renameBands8);
+var L7col = L7sr.filterDate('1999-01-01','2003-05-31')
+              .filterBounds(bounds)
+              .map(cloudMaskL457)
+              .map(renameBands57);
+var L5col = L5sr.filterDate('1986-09-01','2012-05-05')
+              .filterBounds(bounds)
+              .map(cloudMaskL457)
+              .map(renameBands57);
+
+var col = L8col.merge(L7col).merge(L5col);
+print(col.first());
+
+// Make list of years
+var timeframe = ee.String('year');
+var start_list = ee.Date('1986-09-01');
+var end_list = ee.Date('2019-09-01');
+var months = end_list.difference(start_list, timeframe);
+var start_datelist = ee.List.sequence(0, months.int()).map(function(count) {
+  return start_list.advance(count, timeframe);
+});
+print('start_datelist',start_datelist);
+
+var start_list = ee.Date('1988-01-01');
+var end_list = ee.Date('2021-01-01');
+var months = end_list.difference(start_list, timeframe);
+var end_datelist = ee.List.sequence(0, months.int()).map(function(count) {
+  return start_list.advance(count, timeframe);
+});
+print('end_datelist',end_datelist);
+
+// Sequence
+var sequence = ee.List.sequence(0,start_datelist.length().subtract(1),1);
+print('sequence',sequence);
+
+// For loop help: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/for
+sequence.evaluate(function(ids){
+  for (var i=0; i<ids.length; i++) {
+    try{
+    var start_date = ee.String(ee.Date(start_datelist.get(i)).format('YYYY-MM-dd'));
+    var end_date = ee.String(ee.Date(end_datelist.get(i)).format('YYYY-MM-dd'));
+    var image = col.filterDate(start_date,end_date)
+    .reduce(ee.Reducer.percentile([percentile]))
+    .clip(bounds); 
+                  Export.image.toCloudStorage({
+                  image: image,
+                  description: 'MDB_P'+ percentile + '_' + start_date.getInfo() + '_' + end_date.getInfo() + '_', 
+                  bucket: 'mdba_gee_bucket',
+                  region: bounds, 
+                  scale: 30,
+                  maxPixels: 100000000000});
+  }
+  catch(err){print('Error encountered for ' + i + ':',err)}
+}});
