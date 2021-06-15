@@ -19,7 +19,7 @@ To operate this code you will need a Google Earth Engine login subject to their 
 
 This code uses Landsat satellite imagery stored on Google Earth Engine and exports the resulting image percentiles to Google Cloud. It is designed to use the entire Murray-Darling Basin shapefile. 
 
-## Murray-Darling Basin Authority Stand Condition Tool input file converter
+## Input file converter
 
 This script tool is used to process Landsat imagery to the correct specification for use by the SCT. Requires ESRI ArcMap 10.x Arcpy and as installed python 2.7 x64
 
