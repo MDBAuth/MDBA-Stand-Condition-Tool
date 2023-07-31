@@ -11,7 +11,7 @@ Some datasets will be needed for running these codes:
 * Species mask                                - https://code.earthengine.google.com/?asset=users/Projects/SCT_supplementary_files/MDBVTmap1
 * Collection of output condition rasters      - https://code.earthengine.google.com/?asset=users/Projects/Condition_8bit
 
-For more information on the datasets see https://www.mdba.gov.au/sites/default/files/pubs/bp-eval-2020-tree-stand-condition-assessment-tool.pdf
+For more information on the datasets see https://www.mdba.gov.au/sites/default/files/publications/bp-eval-2020-tree-stand-condition-assessment-tool.pdf
 
 ## Create SCT inputs
 
